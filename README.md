@@ -1,4 +1,4 @@
-# Welcome to the eventsourcing_orjsontranscoder project
+# Welcome to the orjson transcoder project
 
 This package provides a `Transcoder` class for use with
 the Python eventsourcing library that uses the [orjson
