@@ -73,4 +73,4 @@ jobs:
       - name: Build package
         run: cythonize _eventsourcing_orjsontranscoder.pyx
       - name: Run tests
-        run: make test
+        run: ls -l && make test
