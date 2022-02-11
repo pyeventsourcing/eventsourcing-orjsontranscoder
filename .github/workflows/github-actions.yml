@@ -73,6 +73,6 @@ jobs:
       - name: Build package
         run: |
           pip install Cython
-          build-inplace
+          make build-inplace
       - name: Run tests
         run: ls -l && make test
