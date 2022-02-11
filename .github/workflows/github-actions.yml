@@ -71,12 +71,6 @@ jobs:
           path: /home/runner/.local
           key: os-${{ matrix.os }}-python-${{ matrix.python-version}}-${{ hashFiles('**/poetry.lock') }}
       - name: Build package
-        run: |
-          pip install -U pip wheel
-          make build
-          rm eventsourcing_orjsontranscoder.py
-          rm _eventsourcing_orjsontranscoder.pyx
-      - name: Install package
-        run: pip install ./dist/*.whl
+        run: cythonize _eventsourcing_orjsontranscoder.pyx
       - name: Run tests
         run: make test
