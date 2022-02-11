@@ -3,7 +3,7 @@ name = "eventsourcing_orjsontranscoder"
 version = "0.1.dev0"
 description = "Python package for eventsourcing_orjsontranscoder."
 authors = [
-    "cookiecutter.author_fullname <john.bywater@appropriatesoftware.net>",
+    "John Bywater <john.bywater@appropriatesoftware.net>",
 ]
 license = "BSD 3-Clause"
 classifiers = [
@@ -17,16 +17,22 @@ classifiers = [
 ]
 readme = "README.md"
 homepage = "https://eventsourcing.readthedocs.io/"
-repository = "https://github.com/pyeventsourcing/cookiecutter.project_slug"
-include = ["eventsourcing_orjsontranscoder/py.typed"]
+repository = "https://github.com/pyeventsourcing/eventsourcing-orjsontranscoder"
+include = ["build.py", "_eventsourcing_orjsontranscoder.pyx"]
+build = 'build.py'
+#ext_modules = cythonize(
+#    [
+#        "eventsourcing/orjson_transcoder.pyx",
+#        # "eventsourcing/popo.pyx"
+#    ]
+#)
 
 [tool.poetry.dependencies]
-python = "^3.8"
-eventsourcing = { version = "~9.2.0" }
+python = "^3.9"
 #eventsourcing = { version = "~9.2.0", extras = ["crypto"] }
-#eventsourcing = { path = "../eventsourcing/", extras = ["crypto"] }
-#eventsourcing = { path = "../eventsourcing/", extras = ["crypto"], develop = true }
-#eventsourcing = { git = "https://github.com/pyeventsourcing/eventsourcing.git", branch = "main", extras = ["crypto"]}
+#eventsourcing = { path = "../eventsourcing/", develop = true, extras = ["crypto"] }
+eventsourcing = { git = "https://github.com/pyeventsourcing/eventsourcing.git", branch = "main"}
+orjson = { version = "~3.6.6"}
 
 [tool.poetry.dev-dependencies]
 black = { version = "*", allow-prereleases = true }
@@ -42,9 +48,11 @@ pre-commit = "*"
 pre-commit-hooks = "*"
 pytest = "*"
 pytest-cov = "*"
+Cython = "*"
+Pycryptodome = "*"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["setuptools", "poetry-core>=1.0.0", "Cython"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
