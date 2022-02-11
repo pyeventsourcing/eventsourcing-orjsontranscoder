@@ -20,12 +20,6 @@ homepage = "https://eventsourcing.readthedocs.io/"
 repository = "https://github.com/pyeventsourcing/eventsourcing-orjsontranscoder"
 include = ["build.py", "_eventsourcing_orjsontranscoder.pyx"]
 build = 'build.py'
-#ext_modules = cythonize(
-#    [
-#        "eventsourcing/orjson_transcoder.pyx",
-#        # "eventsourcing/popo.pyx"
-#    ]
-#)
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -52,7 +46,7 @@ Cython = "*"
 Pycryptodome = "*"
 
 [build-system]
-requires = ["setuptools", "poetry-core>=1.0.0", "Cython"]
+requires = ["setuptools", "wheel", "poetry-core>=1.0.0", "Cython"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
