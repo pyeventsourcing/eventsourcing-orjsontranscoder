@@ -3,7 +3,6 @@ from collections import deque
 from typing import Any, List, Tuple, cast
 
 import orjson as orjson
-
 from eventsourcing.persistence import Transcoder, Transcoding
 
 

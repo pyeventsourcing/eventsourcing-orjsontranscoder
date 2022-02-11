@@ -4,9 +4,7 @@ from typing import Any, Dict, List, Tuple, Union, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 import orjson as orjson
-
 from eventsourcing.domain import DomainEvent
-from eventsourcing_orjsontranscoder import OrjsonTranscoder
 from eventsourcing.persistence import (
     DatetimeAsISO,
     JSONTranscoder,
@@ -21,6 +19,8 @@ from eventsourcing.tests.persistence import (
     CustomType2AsDict,
     TranscoderTestCase,
 )
+
+from eventsourcing_orjsontranscoder import OrjsonTranscoder
 
 
 class TupleAsList(Transcoding):
