@@ -26,7 +26,7 @@ python = "^3.8"
 #eventsourcing = { version = "~9.2.0", extras = ["crypto"] }
 #eventsourcing = { path = "../eventsourcing/", develop = true, extras = ["crypto"] }
 eventsourcing = { git = "https://github.com/pyeventsourcing/eventsourcing.git", branch = "main"}
-orjson = { version = "~3.6.6"}
+orjson = { version = "~3.6.5"}
 
 [tool.poetry.dev-dependencies]
 black = { version = "*", allow-prereleases = true }
