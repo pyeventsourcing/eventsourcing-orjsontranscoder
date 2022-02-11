@@ -74,6 +74,8 @@ jobs:
         run: |
           pip install -U pip wheel
           make build
+          rm eventsourcing_orjsontranscoder.py
+          rm _eventsourcing_orjsontranscoder.pyx
       - name: Install package
         run: pip install ./dist/*.whl
       - name: Run tests
