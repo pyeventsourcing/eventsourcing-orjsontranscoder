@@ -71,6 +71,6 @@ jobs:
           path: /home/runner/.local
           key: os-${{ matrix.os }}-python-${{ matrix.python-version}}-${{ hashFiles('**/poetry.lock') }}
       - name: Build Cython extension
-        run: pip install -e .
+        run: make build && pip install ./dist/*.tar.gz
       - name: Run tests
         run: make test
