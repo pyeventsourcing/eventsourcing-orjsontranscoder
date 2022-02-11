@@ -102,4 +102,4 @@ test:
 
 .PHONY: build
 build:
-	$(POETRY) build -f sdist
+	$(POETRY) build -f sdist bdist_wheel
