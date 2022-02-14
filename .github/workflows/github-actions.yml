@@ -75,4 +75,4 @@ jobs:
           pip install Cython
           make build-inplace
       - name: Run tests
-        run: ls -l && make test
+        run: make test
