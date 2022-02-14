@@ -16,7 +16,7 @@ class TupleAsList(Transcoding):
         return tuple(data)
 
 
-cdef object _encode_value(object obj, list frontier, dict transcodings, object parent, object key):
+cdef _encode_value(object obj, list stack, dict transcodings, object parent, object key):
     cdef object transcoding
     cdef object obj_type = type(obj)
     if obj_type is str:
@@ -25,11 +25,11 @@ cdef object _encode_value(object obj, list frontier, dict transcodings, object p
         pass
     elif obj_type is dict:
         obj = obj.copy()
-        frontier.append(obj)
+        stack.append(obj)
         parent[key] = obj
     elif obj_type is list:
         obj = obj.copy()
-        frontier.append(obj)
+        stack.append(obj)
         parent[key] = obj
     else:
         try:
@@ -45,34 +45,34 @@ cdef object _encode_value(object obj, list frontier, dict transcodings, object p
                 "_type_": transcoding.name,
                 "_data_": transcoding.encode(obj),
             }
-            frontier.append(obj)
+            stack.append(obj)
             parent[key] = obj
 
 
-cdef object _encode(object obj, dict transcodings):
-    cdef list frontier = list()
-    cdef int i = 0
+cdef _encode(object obj, dict transcodings):
+    cdef list stack = list()
+    cdef int stack_pointer = 0
     cdef object next
     cdef object next_type
-    cdef str key
+    cdef object dict_key
     cdef object value
-    cdef int j
+    cdef int list_index
     cdef list list_obj
 
     cdef list objects = [obj]
-    _encode_value(obj, frontier, transcodings, objects, 0)
-    while i < len(frontier):
-        next = frontier[i]
-        i += 1
+    _encode_value(obj, stack, transcodings, objects, 0)
+    while stack_pointer < len(stack):
+        next = stack[stack_pointer]
+        stack_pointer += 1
         next_type = type(next)
         if next_type is dict:
-            for key, value in (<dict>next).items():
-                _encode_value(value, frontier, transcodings, next, key)
+            for dict_key, value in (<dict>next).items():
+                _encode_value(value, stack, transcodings, next, dict_key)
 
         elif next_type is list:
             list_obj = <list>next
-            for j in range(len(list_obj)):
-                _encode_value(list_obj[j], frontier, transcodings, next, j)
+            for list_index in range(len(list_obj)):
+                _encode_value(list_obj[list_index], stack, transcodings, next, list_index)
     return objects[0]
 
 
@@ -82,82 +82,52 @@ cdef enum TypeCode:
     is_list = 2,
 
 
-cdef class Frame:
-    cdef object obj
-    cdef TypeCode obj_type_code
-    cdef object parent
-    cdef object key
-    cdef Frame previous
-    cdef Frame next
-
-    def __cinit__(self, object obj, TypeCode obj_type_code, object parent, object key, Frame previous) -> None:
-        self.obj = obj
-        self.obj_type_code = obj_type_code
-        self.parent = parent
-        self.key = key
-        self.previous = previous
-
-
 cdef object _decode(object obj, dict transcodings):
-    cdef Frame new_frame = None
-    cdef Frame previous_frame = None
-    cdef Frame frame = None
+    cdef list stack = []
+    cdef int stack_pointer = 0
+    cdef list frame = None
+
+    cdef object obj_type = type(obj)
+    cdef dict dict_obj
+    cdef object dict_key
+    cdef list list_obj
+    cdef int list_index
+    cdef object value
+    cdef object value_type
+
     cdef object transcoding
     cdef object transcoded_type
     cdef object transcoded_data
-    cdef int len_list
-    cdef int i
-    cdef object key
-    cdef object value
-    cdef object value_type
-    cdef dict dict_obj
-    cdef list list_obj
-    cdef TypeCode obj_type_code
-    cdef object obj_type = type(obj)
+
     if obj_type is dict:
-        new_frame = Frame.__new__(Frame, obj, is_dict, None, None, previous_frame)
-        previous_frame = new_frame
-        frame = new_frame
+        stack.append([obj, None, None])
     elif obj_type is list:
-        new_frame = Frame.__new__(Frame, obj, is_list, None, None, previous_frame)
-        previous_frame = new_frame
-        frame = new_frame
+        stack.append([obj, None, None])
 
-    while frame is not None:
-        obj = frame.obj
-        obj_type_code = frame.obj_type_code
-        if obj_type_code == is_dict:
-            for key, value in (<dict>obj).items():
+    while stack_pointer < len(stack):
+        frame = stack[stack_pointer]
+        stack_pointer += 1
+        obj = frame[0]
+        obj_type = type(obj)
+        if obj_type is dict:
+            for dict_key, value in (<dict>obj).items():
                 value_type = type(value)
-                if value_type is dict:
-                    new_frame = Frame.__new__(Frame, value, is_dict, obj, key, previous_frame)
-                    previous_frame.next = new_frame
-                    previous_frame = new_frame
-                elif value_type is list:
-                    new_frame = Frame.__new__(Frame, value, is_list, obj, key, previous_frame)
-                    previous_frame.next = new_frame
-                    previous_frame = new_frame
+                if value_type is dict or value_type is list:
+                    stack.append([value, obj, dict_key])
 
-        elif obj_type_code == is_list:
+        elif obj_type is list:
             list_obj = <list>obj
-            for i in range(len(list_obj)):
-                value = (list_obj)[i]
+            for list_index in range(len(list_obj)):
+                value = list_obj[list_index]
                 value_type = type(value)
-                if value_type is dict:
-                    new_frame = Frame.__new__(Frame, value, is_dict, obj, i, previous_frame)
-                    previous_frame.next = new_frame
-                    previous_frame = new_frame
-                elif value_type is list:
-                    new_frame = Frame.__new__(Frame, value, is_list, obj, i, previous_frame)
-                    previous_frame.next = new_frame
-                    previous_frame = new_frame
-        frame = frame.next
+                if value_type is dict or value_type is list:
+                    stack.append([value, obj, list_index])
 
-    frame = previous_frame
-    while frame is not None:
-
-        obj = frame.obj
-        if frame.obj_type_code == is_dict:
+    while stack_pointer > 0:
+        stack_pointer -= 1
+        frame = stack[stack_pointer]
+        obj = frame[0]
+        if type(obj) is dict:
             dict_obj = <dict>obj
             if len(dict_obj) == 2:
                 try:
@@ -180,15 +150,12 @@ cdef object _decode(object obj, dict transcodings):
                             )
                         else:
                             obj = transcoding.decode(transcoded_data)
-                            if frame.parent is not None:
-                                frame.parent[frame.key] = obj
-        frame = frame.previous
+                            if frame[1] is not None:
+                                frame[1][frame[2]] = obj
     return obj
 
 
 class OrjsonTranscoder(Transcoder):
-
-    native_types = (str, int, float)
 
     def __init__(self):
         super().__init__()
