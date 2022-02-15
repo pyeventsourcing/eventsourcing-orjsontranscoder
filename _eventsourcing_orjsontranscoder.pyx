@@ -1,12 +1,13 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
 from datetime import datetime
-from typing import Any, List, Tuple, cast
+from typing import cast
 from uuid import UUID
 
 
 cdef int a
 
-from orjson import loads, dumps
+from orjson import dumps, loads
+
 
 cdef class NullName:
     pass

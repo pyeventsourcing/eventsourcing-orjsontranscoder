@@ -14,14 +14,22 @@ from eventsourcing.persistence import (
 )
 from eventsourcing.tests.persistence import (
     CustomType1,
+    CustomType1AsDict,
     CustomType2,
-    TranscoderTestCase, CustomType1AsDict, CustomType2AsDict,
+    CustomType2AsDict,
+    TranscoderTestCase,
 )
 
-from _eventsourcing_orjsontranscoder import CTupleAsList, CDatetimeAsISO, CUUIDAsHex
+from _eventsourcing_orjsontranscoder import CDatetimeAsISO, CTupleAsList, CUUIDAsHex
 from eventsourcing_orjsontranscoder import OrjsonTranscoder
-from tests._orjson_transcodings import CCustomType1AsDict, CCustomType2AsDict, \
-    CMyDictAsDict, CMyListAsList, CMyIntAsInt, CMyStrAsStr
+from tests._orjson_transcodings import (
+    CCustomType1AsDict,
+    CCustomType2AsDict,
+    CMyDictAsDict,
+    CMyIntAsInt,
+    CMyListAsList,
+    CMyStrAsStr,
+)
 
 
 class TupleAsList(Transcoding):
@@ -139,7 +147,6 @@ class TestOrjsonTranscoder(TranscoderTestCase):
         return transcoder
 
     def test_performance(self):
-        sleep(0.1)
         transcoder = self.construct_transcoder()
         self._test_performance(transcoder)
         sleep(0.1)
@@ -177,10 +184,16 @@ class TestOrjsonTranscoder(TranscoderTestCase):
 
         number = 100000
         duration = timeit.timeit(lambda: transcoder.encode(obj), number=number)
-        print(f"{transcoder.__class__.__name__} encode: {1000000 * duration / number:.1f} μs")
+        print(
+            f"{transcoder.__class__.__name__} encode:"
+            f" {1000000 * duration / number:.1f} μs"
+        )
 
         duration = timeit.timeit(lambda: transcoder.decode(data), number=number)
-        print(f"{transcoder.__class__.__name__} decode: {1000000 * duration / number:.1f} μs")
+        print(
+            f"{transcoder.__class__.__name__} decode:"
+            f" {1000000 * duration / number:.1f} μs"
+        )
 
 
 del TranscoderTestCase

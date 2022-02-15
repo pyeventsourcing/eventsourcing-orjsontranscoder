@@ -1,8 +1,15 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
-from eventsourcing.tests.persistence import CustomType1, CustomType2, MyInt, MyStr, \
-    MyList, MyDict
+from eventsourcing.tests.persistence import (
+    CustomType1,
+    CustomType2,
+    MyDict,
+    MyInt,
+    MyList,
+    MyStr,
+)
 
 from _eventsourcing_orjsontranscoder cimport CTranscoding
+
 
 cdef class CCustomType1AsDict(CTranscoding):
     def __cinit__(self):
