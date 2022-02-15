@@ -27,12 +27,12 @@ build = 'build.py'
 
 [tool.poetry.dependencies]
 python = "^3.8"
-eventsourcing = { version = "~9.2.1" }
-#eventsourcing = { path = "../eventsourcing/", develop = true }
-#eventsourcing = { git = "https://github.com/pyeventsourcing/eventsourcing.git", branch = "main"}
 orjson = { version = "~3.6.7"}
 
 [tool.poetry.dev-dependencies]
+eventsourcing = { version = "~9.2.1" }
+#eventsourcing = { path = "../eventsourcing/", develop = true }
+#eventsourcing = { git = "https://github.com/pyeventsourcing/eventsourcing.git", branch = "main"}
 black = { version = "*", allow-prereleases = true }
 flake8 = "*"
 flake8-broken-line = "*"

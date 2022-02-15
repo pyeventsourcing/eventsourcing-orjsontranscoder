@@ -103,7 +103,7 @@ python-versions = "*"
 name = "eventsourcing"
 version = "9.2.1"
 description = "Event sourcing in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -532,7 +532,7 @@ testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9485990a6bb3c1056764bb08458c0f59946f0501c4c59ce588be60c38da775cf"
+content-hash = "1b58f32c8212e662512999a5832c1823105a18e778364866b62cb5f615d2055e"
 
 [metadata.files]
 atomicwrites = [
