@@ -4,12 +4,17 @@ This package provides a `OrjsonTranscoder` class for use with
 the Python eventsourcing library that uses the [orjson
 library](https://pypi.org/project/orjson).
 
-It improves on the core library's `JSONTranscoder` class by allowing
-subclasses of `str`, `int`, `dict` and `tuple` to be transcoded
-without losing type information.
+Most importantly, `OrjsonTranscoder` supports custom transcoding of instances
+of `tuple` and subclasses of `str`, `int`, `dict` and `tuple`. This is an
+important improvement on the core library's `JSONTranscoder` class which converts
+`tuple` to `list` and loses type information for subclasses of `str`, `int`, `dict`
+and `tuple`.
 
-It is also faster (encoding approximately x3 faster, and decoding approximately x2
-faster).
+It is also faster than `JSONTranscoder`, encoding approximately x3 faster
+and decoding approximately x2 faster. This is less important than the preservation
+of type information (see above) because latency in your application will
+usually be dominated by database interactions. However, it's nice that it
+is not slower.
 
 | class            | encode  | decode  |
 |------------------|---------|---------|
