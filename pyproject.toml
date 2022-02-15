@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "eventsourcing_orjsontranscoder"
 version = "0.1"
-description = "Python package for eventsourcing_orjsontranscoder."
+description = "Python package for OrjsonTranscoder."
 authors = [
     "John Bywater <john.bywater@appropriatesoftware.net>",
 ]
@@ -18,7 +18,11 @@ classifiers = [
 readme = "README.md"
 homepage = "https://eventsourcing.readthedocs.io/"
 repository = "https://github.com/pyeventsourcing/eventsourcing-orjsontranscoder"
-include = ["build.py", "_eventsourcing_orjsontranscoder.pyx"]
+include = [
+    "build.py",
+    "_eventsourcing_orjsontranscoder.pyx",
+    "_eventsourcing_orjsontranscoder.pyd"
+]
 build = 'build.py'
 
 [tool.poetry.dependencies]

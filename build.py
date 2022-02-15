@@ -12,7 +12,6 @@ def build(setup_kwargs):
     # The file you want to compile
     extensions = [
         "_eventsourcing_orjsontranscoder.pyx",
-        "tests/_orjson_transcodings.pyx",
     ]
 
     # gcc arguments hack: enable optimizations

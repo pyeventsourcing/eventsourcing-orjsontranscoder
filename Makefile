@@ -102,7 +102,7 @@ test:
 
 .PHONY: build
 build:
-	$(POETRY) build
+	$(POETRY) build -f sdist
 
 .PHONY: publish
 publish:
