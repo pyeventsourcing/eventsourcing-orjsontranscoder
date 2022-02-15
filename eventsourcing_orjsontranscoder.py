@@ -5,3 +5,5 @@ from _eventsourcing_orjsontranscoder import (
     CUUIDAsHex,
     OrjsonTranscoder,
 )
+
+__version__ = 0.1
