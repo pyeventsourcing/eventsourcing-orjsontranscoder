@@ -4,6 +4,35 @@ This package provides a `OrjsonTranscoder` class for use with
 the Python eventsourcing library that uses the [orjson
 library](https://pypi.org/project/orjson).
 
+## Installation
+
+Use pip to install the [stable distribution](https://pypi.org/project/eventsourcing-orjsontranscoder/)
+from the Python Package Index.
+
+    $ pip install eventsourcing_orjsontranscoder
+
+It is recommended to install Python packages into a Python virtual environment.
+
+This package uses Cython, so relevant build tools may need to be
+installed before this package can be installed successfully.
+
+
+## Synopsis
+
+```python
+>>> from eventsourcing_orjsontranscoder import OrjsonTranscoder, CTupleAsList
+>>> t = OrjsonTranscoder()
+>>> t.register(CTupleAsList())
+>>> d = t.encode((1,2,3))
+>>> d
+b'{"_type_":"tuple_as_list","_data_":[1,2,3]}'
+>>> t.decode(d)
+(1, 2, 3)
+
+```
+
+## Features
+
 Most importantly, `OrjsonTranscoder` supports custom transcoding of instances
 of `tuple` and subclasses of `str`, `int`, `dict` and `tuple`. This is an
 important improvement on the core library's `JSONTranscoder` class which converts
@@ -16,23 +45,31 @@ of type information (see above) because latency in your application will
 usually be dominated by database interactions. However, it's nice that it
 is not slower.
 
-| class            | encode  | decode  |
-|------------------|---------|---------|
-| OrjsonTranscoder | 6.8 μs  | 13.8 μs |
+| class            |  encode |  decode |
+|------------------|--------:|--------:|
+| OrjsonTranscoder |  6.8 μs | 13.8 μs |
 | JSON Transcoder  | 20.1 μs | 25.7 μs |
 
+The above benchmark was performed on GitHub using the following object,
+which is perhaps representative of the state of a domain event in an
+event-sourced application.
 
-This package uses Cython, so relevant build tools may need to be
-installed before this package can be installed successfully.
+```python
+obj = {
+    "originator_id": uuid5(NAMESPACE_URL, "some_id"),
+    "originator_version": 123,
+    "timestamp": DomainEvent.create_timestamp(),
+    "a_str": "hello",
+    "b_int": 1234567,
+    "c_tuple": (1, 2, 3, 4, 5, 6, 7),
+    "d_list": [1, 2, 3, 4, 5, 6, 7],
+    "e_dict": {"a": 1, "b": 2, "c": 3},
+    "f_valueobj": CustomType2(
+        CustomType1(UUID("b2723fe2c01a40d2875ea3aac6a09ff5"))
+    ),
+}
 
-## Installation
-
-Use pip to install the [stable distribution](https://pypi.org/project/eventsourcing-orjsontranscoder/)
-from the Python Package Index.
-
-    $ pip install eventsourcing_orjsontranscoder
-
-Please note, it is recommended to install Python packages into a Python virtual environment.
+```
 
 ## Custom Transcodings
 
