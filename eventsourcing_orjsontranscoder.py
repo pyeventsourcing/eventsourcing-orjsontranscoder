@@ -6,4 +6,4 @@ from _eventsourcing_orjsontranscoder import (
     OrjsonTranscoder,
 )
 
-__version__ = 0.1
+__version__ = "0.1.2"

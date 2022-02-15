@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eventsourcing_orjsontranscoder"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python package for OrjsonTranscoder."
 authors = [
     "John Bywater <john.bywater@appropriatesoftware.net>",
