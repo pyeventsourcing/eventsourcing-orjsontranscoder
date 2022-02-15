@@ -101,12 +101,11 @@ python-versions = "*"
 
 [[package]]
 name = "eventsourcing"
-version = "9.3.0.dev0"
+version = "9.2.1"
 description = "Event sourcing in Python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
-develop = false
 
 [package.extras]
 crypto = ["pycryptodome (<=3.12.99999)"]
@@ -114,12 +113,6 @@ dev = ["psycopg2-binary (<=2.9.99999)", "pycryptodome (<=3.12.99999)", "Sphinx (
 docs = ["psycopg2-binary (<=2.9.99999)", "pycryptodome (<=3.12.99999)", "Sphinx (==4.2.0)", "sphinx-rtd-theme (==1.0.0)"]
 postgres = ["psycopg2 (<=2.9.99999)"]
 postgres_dev = ["psycopg2-binary (<=2.9.99999)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/pyeventsourcing/eventsourcing.git"
-reference = "main"
-resolved_reference = "36d67d75e9b5444bd98fbedb9cca34e5268141b6"
 
 [[package]]
 name = "filelock"
@@ -539,7 +532,7 @@ testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "39f06d89844f2e3726a8efca64e7e096aca280dfb869987938f99909dc2973d9"
+content-hash = "9485990a6bb3c1056764bb08458c0f59946f0501c4c59ce588be60c38da775cf"
 
 [metadata.files]
 atomicwrites = [
@@ -672,7 +665,10 @@ distlib = [
     {file = "distlib-0.3.4-py2.py3-none-any.whl", hash = "sha256:6564fe0a8f51e734df6333d08b8b94d4ea8ee6b99b5ed50613f731fd4089f34b"},
     {file = "distlib-0.3.4.zip", hash = "sha256:e4b58818180336dc9c529bfb9a0b58728ffc09ad92027a3f30b7cd91e3458579"},
 ]
-eventsourcing = []
+eventsourcing = [
+    {file = "eventsourcing-9.2.1-py3-none-any.whl", hash = "sha256:1c322943db0cb852ae299d3065a81b4e1333909f6a5cb2f6b823662cf60538b8"},
+    {file = "eventsourcing-9.2.1.tar.gz", hash = "sha256:8a967065444cf1402d238cfbaa037fd8e10352ec5fba94a18a7833a50c890f60"},
+]
 filelock = [
     {file = "filelock-3.5.0-py3-none-any.whl", hash = "sha256:a7141afb4feca60925cfc090b411fb9faaf542d06d58ece4f93d940265e6b995"},
     {file = "filelock-3.5.0.tar.gz", hash = "sha256:137b661e657f7850eec9def2a001efadba3414be523b87cd3f9a037372d80a15"},
