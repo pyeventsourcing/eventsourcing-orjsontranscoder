@@ -3,18 +3,7 @@ from datetime import datetime
 from typing import cast
 from uuid import UUID
 
-
-cdef int a
-
 from orjson import dumps, loads
-
-
-cdef class NullName:
-    pass
-
-
-cdef class NullType:
-    pass
 
 
 cdef class CTranscoding:
@@ -91,12 +80,6 @@ cdef _encode(object obj, dict transcodings):
             for list_index in range(len(list_obj)):
                 _encode_value(list_obj[list_index], stack, transcodings, next, list_index)
     return objects[0]
-
-
-cdef enum TypeCode:
-    is_undef = 0,
-    is_dict = 1,
-    is_list = 2,
 
 
 cdef object _decode(object obj, dict transcodings):
