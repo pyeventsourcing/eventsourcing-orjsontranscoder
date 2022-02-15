@@ -21,7 +21,6 @@ class MyInt(int):
 
 
 class CMyIntAsInt(CTranscoding):
-
     def type(self):
         return MyInt
 
