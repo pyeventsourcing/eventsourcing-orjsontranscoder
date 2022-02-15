@@ -1,27 +1,29 @@
-# Welcome to the orjson transcoder project
+# Welcome to the OrjsonTranscoder project
 
 This package provides a `OrjsonTranscoder` class for use with
 the Python eventsourcing library that uses the [orjson
 library](https://pypi.org/project/orjson).
 
-It improves on the default `JSONTranscoder` class by allowing
+It improves on the core library's `JSONTranscoder` class by allowing
 subclasses of `str`, `int`, `dict` and `tuple` to be transcoded
-without losing type information. It is also faster (approximately
-x3 encoding speed and x2 decoding speed). This package uses
-Cython, so relevant build tools may need to be installed
-before this package can be installed successfully.
+without losing type information. It is also faster (encoding
+approximately x3 faster, and decoding approximately x2 faster).
+
+This package uses Cython, so relevant build tools may need to be
+installed before this package can be installed successfully.
 
 ## Installation
 
 Use pip to install the [stable distribution](https://pypi.org/project/eventsourcing-orjsontranscoder/)
-from the Python Package Index. Please note, it is recommended to
-install Python packages into a Python virtual environment.
+from the Python Package Index.
 
     $ pip install eventsourcing_orjsontranscoder
 
-## Usage
+Please note, it is recommended to install Python packages into a Python virtual environment.
 
-You can define custom transcodings for your custom value object type by subclassing
+## Custom Transcodings
+
+Define custom transcodings for your custom value object types by subclassing
 ``CTranscoding``. The prefix ``C`` is used to distinguish these classes from the
 ``Transcoding`` classes provided by the core Python eventsourcing library.
 
@@ -85,12 +87,13 @@ your distribution to build the Cython module when your code is installed.
 $ cythonize -i my_transcodings.pyx
 ```
 
-See the Cython documentation for more information
-about Cython.
+See the Cython documentation for more information about Cython.
 
 
-To use the ``OrjsonTranscoder`` in a Python eventsourcing application object,
-override  the `construct_transcoder()` and `register_transcodings()`
+## Using the OrjsonTranscoder
+
+To use the ``OrjsonTranscoder`` class in a Python eventsourcing application
+object, override  the `construct_transcoder()` and `register_transcodings()`
 methods.
 
 ```python
@@ -198,5 +201,10 @@ Check the formatting of the code.
 You can automatically reformat the code by running the following command.
 
     $ make fmt
+
+If the project dependencies change, you can update your packages by running
+the following command.
+
+    $ make update-packages
 
 Please submit changes for review by making a pull request.
