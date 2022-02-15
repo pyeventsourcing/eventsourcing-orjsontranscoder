@@ -128,9 +128,9 @@ class DogSchool(Application):
         return transcoder
 
     def register_transcodings(self, transcoder):
-        transcoder.register(CUUIDAsHex())
         transcoder.register(CDatetimeAsISO())
         transcoder.register(CTupleAsList())
+        transcoder.register(CUUIDAsHex())
         transcoder.register(CMyIntAsInt())
 
     def register_dog(self, name, age):
