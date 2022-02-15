@@ -44,7 +44,7 @@ class DogSchool(Application):
         transcoder.register(CUUIDAsHex())
         transcoder.register(CDatetimeAsISO())
         transcoder.register(CTupleAsList())
-        # transcoder.register(CMyIntAsInt())
+        transcoder.register(CMyIntAsInt())
 
     def register_dog(self, name, age):
         dog = Dog(name, age)
@@ -87,16 +87,16 @@ def test_dog_school():
     school = DogSchool()
 
     # Evolve application state.
-    dog_id = school.register_dog("Fido", 2)
+    dog_id = school.register_dog("Fido", MyInt(2))
     school.add_trick(dog_id, "roll over")
     school.add_trick(dog_id, "play dead")
-    school.update_age(dog_id, 5)
+    school.update_age(dog_id, MyInt(5))
 
     # Query application state.
     dog = school.get_dog(dog_id)
     assert dog["name"] == "Fido"
     assert dog["tricks"] == ("roll over", "play dead")
-    assert dog["age"] == 5
+    assert dog["age"] == MyInt(5)
 
     # Select notifications.
     notifications = school.notification_log.select(start=1, limit=10)
