@@ -107,3 +107,4 @@ build:
 .PHONY: build-inplace
 build-inplace:
 	$(POETRY) run cythonize -i _eventsourcing_orjsontranscoder.pyx
+	$(POETRY) run cythonize -i  tests/_orjson_transcodings.pyx

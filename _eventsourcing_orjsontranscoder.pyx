@@ -1,23 +1,32 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
+from datetime import datetime
 from typing import Any, List, Tuple, cast
+from uuid import UUID
+
+
+cdef int a
 
 from orjson import loads, dumps
-from eventsourcing.persistence import Transcoder, Transcoding
+
+cdef class NullName:
+    pass
 
 
-class TupleAsList(Transcoding):
-    type = tuple
-    name = 'tuple_as_list'
+cdef class NullType:
+    pass
 
-    def encode(self, obj: Tuple[Any, ...]) -> List[Any]:
-        return [i for i in obj]
 
-    def decode(self, data: List[Any]) -> Tuple[Any, ...]:
-        return tuple(data)
+cdef class CTranscoding:
+
+    cdef object encode(self, object obj):
+        raise NotImplemented()
+
+    cdef object decode(self, object data):
+        raise NotImplemented()
 
 
 cdef _encode_value(object obj, list stack, dict transcodings, object parent, object key):
-    cdef object transcoding
+    cdef CTranscoding transcoding
     cdef object obj_type = type(obj)
     if obj_type is str:
         pass
@@ -95,7 +104,7 @@ cdef object _decode(object obj, dict transcodings):
     cdef object value
     cdef object value_type
 
-    cdef object transcoding
+    cdef CTranscoding transcoding
     cdef object transcoded_type
     cdef object transcoded_data
 
@@ -155,16 +164,69 @@ cdef object _decode(object obj, dict transcodings):
     return obj
 
 
-class OrjsonTranscoder(Transcoder):
+cdef class CTupleAsList(CTranscoding):
+    def __cinit__(self):
+        self.type = tuple
+        self.name = 'tuple_as_list'
+
+    cdef object encode(self, object obj):
+        return [i for i in obj]
+
+    cdef object decode(self, object data):
+        return tuple(data)
+
+
+cdef class CDatetimeAsISO(CTranscoding):
+    """
+    Transcoding that represents :class:`datetime` objects as ISO strings.
+    """
+
+    def __cinit__(self):
+        self.type = datetime
+        self.name = "datetime_iso"
+
+    cdef object encode(self, object obj):
+        return obj.isoformat()
+
+    cdef object decode(self, object data):
+        return datetime.fromisoformat(data)
+
+
+cdef class CUUIDAsHex(CTranscoding):
+    """
+    Transcoding that represents :class:`UUID` objects as hex values.
+    """
+
+    def __cinit__(self):
+        self.type = UUID
+        self.name = "uuid_hex"
+
+    cdef object encode(self, object obj):
+        return obj.hex
+
+    cdef object decode(self, object data):
+        return UUID(data)
+
+
+cdef class OrjsonTranscoder:
+    cdef dict types
+    cdef dict names
 
     def __init__(self):
-        super().__init__()
-        self.register(TupleAsList())
+        self.types = {}
+        self.names = {}
 
-    def encode(self, obj: Any) -> bytes:
+    def register(self, CTranscoding transcoding):
+        """
+        Registers given transcoding with the transcoder.
+        """
+        self.types[transcoding.type] = transcoding
+        self.names[transcoding.name] = transcoding
+
+    def encode(self, obj):
         return dumps(_encode(obj, self.types))
 
-    def decode(self, data: bytes) -> Any:
+    def decode(self, data):
         return _decode(loads(data), self.names)
 
 #

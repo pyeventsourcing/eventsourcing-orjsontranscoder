@@ -14,13 +14,14 @@ from eventsourcing.persistence import (
 )
 from eventsourcing.tests.persistence import (
     CustomType1,
-    CustomType1AsDict,
     CustomType2,
-    CustomType2AsDict,
-    TranscoderTestCase,
+    TranscoderTestCase, CustomType1AsDict, CustomType2AsDict,
 )
 
+from _eventsourcing_orjsontranscoder import CTupleAsList, CDatetimeAsISO, CUUIDAsHex
 from eventsourcing_orjsontranscoder import OrjsonTranscoder
+from tests._orjson_transcodings import CCustomType1AsDict, CCustomType2AsDict, \
+    CMyDictAsDict, CMyListAsList, CMyIntAsInt, CMyStrAsStr
 
 
 class TupleAsList(Transcoding):
@@ -124,24 +125,36 @@ class OrjsonTranscoder_Recursive(Transcoder):
 
 
 class TestOrjsonTranscoder(TranscoderTestCase):
-    transcoder_class = OrjsonTranscoder
+    def construct_transcoder(self):
+        transcoder = OrjsonTranscoder()
+        transcoder.register(CTupleAsList())
+        transcoder.register(CDatetimeAsISO())
+        transcoder.register(CUUIDAsHex())
+        transcoder.register(CCustomType1AsDict())
+        transcoder.register(CCustomType2AsDict())
+        transcoder.register(CMyDictAsDict())
+        transcoder.register(CMyListAsList())
+        transcoder.register(CMyIntAsInt())
+        transcoder.register(CMyStrAsStr())
+        return transcoder
 
     def test_performance(self):
         sleep(0.1)
-        self._test_performance(OrjsonTranscoder)
+        transcoder = self.construct_transcoder()
+        self._test_performance(transcoder)
         sleep(0.1)
-        self._test_performance(JSONTranscoder)
-        print("")
-        print("")
-        print("")
-        sleep(0.1)
-
-    def _test_performance(self, transcoder_cls):
-        transcoder = transcoder_cls()
+        transcoder = JSONTranscoder()
         transcoder.register(DatetimeAsISO())
         transcoder.register(UUIDAsHex())
         transcoder.register(CustomType1AsDict())
         transcoder.register(CustomType2AsDict())
+        self._test_performance(transcoder)
+        print("")
+        print("")
+        print("")
+        sleep(0.1)
+
+    def _test_performance(self, transcoder):
 
         obj = {
             "originator_id": uuid5(NAMESPACE_URL, "some_id"),
@@ -164,10 +177,10 @@ class TestOrjsonTranscoder(TranscoderTestCase):
 
         number = 100000
         duration = timeit.timeit(lambda: transcoder.encode(obj), number=number)
-        print(f"{transcoder_cls.__name__} encode: {1000000 * duration / number:.1f} μs")
+        print(f"{transcoder.__class__.__name__} encode: {1000000 * duration / number:.1f} μs")
 
         duration = timeit.timeit(lambda: transcoder.decode(data), number=number)
-        print(f"{transcoder_cls.__name__} decode: {1000000 * duration / number:.1f} μs")
+        print(f"{transcoder.__class__.__name__} decode: {1000000 * duration / number:.1f} μs")
 
 
 del TranscoderTestCase
