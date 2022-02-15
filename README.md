@@ -6,12 +6,15 @@ library](https://pypi.org/project/orjson).
 
 It improves on the core library's `JSONTranscoder` class by allowing
 subclasses of `str`, `int`, `dict` and `tuple` to be transcoded
-without losing type information. It is also faster (encoding
-approximately x3 faster, and decoding approximately x2 faster).
+without losing type information.
 
-| class            | encode  | decode   |
-| OrjsonTranscoder | 6.8 μs  | 13.8 μs  |
-| JSON Transcoder  | 20.1 μs |  25.7 μs |
+It is also faster (encoding approximately x3 faster, and decoding approximately x2
+faster).
+
+| class            | encode  | decode  |
+|------------------|---------|---------|
+| OrjsonTranscoder | 6.8 μs  | 13.8 μs |
+| JSON Transcoder  | 20.1 μs | 25.7 μs |
 
 
 This package uses Cython, so relevant build tools may need to be
