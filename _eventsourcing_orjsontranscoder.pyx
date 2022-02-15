@@ -19,16 +19,23 @@ cdef class NullType:
 
 cdef class CTranscoding:
 
-    cdef object encode(self, object obj):
-        raise NotImplemented()
+    cpdef object type(self):
+        raise NotImplementedError()
 
-    cdef object decode(self, object data):
-        raise NotImplemented()
+    cpdef object name(self):
+        raise NotImplementedError()
+
+    cpdef object encode(self, object obj):
+        raise NotImplementedError()
+
+    cpdef object decode(self, object data):
+        raise NotImplementedError()
 
 
 cdef _encode_value(object obj, list stack, dict transcodings, object parent, object key):
     cdef CTranscoding transcoding
     cdef object obj_type = type(obj)
+
     if obj_type is str:
         pass
     elif obj_type is int:
@@ -48,11 +55,11 @@ cdef _encode_value(object obj, list stack, dict transcodings, object parent, obj
             raise TypeError(
                 f"Object of type {obj_type} is not "
                 "serializable. Please define and register "
-                "a custom transcoding for this type."
+                f"a custom transcoding for this type."
             ) from None
         else:
             obj = {
-                "_type_": transcoding.name,
+                "_type_": transcoding.name(),
                 "_data_": transcoding.encode(obj),
             }
             stack.append(obj)
@@ -166,14 +173,16 @@ cdef object _decode(object obj, dict transcodings):
 
 
 cdef class CTupleAsList(CTranscoding):
-    def __cinit__(self):
-        self.type = tuple
-        self.name = 'tuple_as_list'
+    cpdef object type(self):
+        return tuple
 
-    cdef object encode(self, object obj):
+    cpdef object name(self):
+        return "tuple_as_list"
+
+    cpdef object encode(self, object obj):
         return [i for i in obj]
 
-    cdef object decode(self, object data):
+    cpdef object decode(self, object data):
         return tuple(data)
 
 
@@ -181,15 +190,16 @@ cdef class CDatetimeAsISO(CTranscoding):
     """
     Transcoding that represents :class:`datetime` objects as ISO strings.
     """
+    cpdef object type(self):
+        return datetime
 
-    def __cinit__(self):
-        self.type = datetime
-        self.name = "datetime_iso"
+    cpdef object name(self):
+        return "datetime_iso"
 
-    cdef object encode(self, object obj):
+    cpdef object encode(self, object obj):
         return obj.isoformat()
 
-    cdef object decode(self, object data):
+    cpdef object decode(self, object data):
         return datetime.fromisoformat(data)
 
 
@@ -197,15 +207,16 @@ cdef class CUUIDAsHex(CTranscoding):
     """
     Transcoding that represents :class:`UUID` objects as hex values.
     """
+    cpdef object type(self):
+        return UUID
 
-    def __cinit__(self):
-        self.type = UUID
-        self.name = "uuid_hex"
+    cpdef object name(self):
+        return "uuid_hex"
 
-    cdef object encode(self, object obj):
+    cpdef object encode(self, object obj):
         return obj.hex
 
-    cdef object decode(self, object data):
+    cpdef object decode(self, object data):
         return UUID(data)
 
 
@@ -221,8 +232,8 @@ cdef class OrjsonTranscoder:
         """
         Registers given transcoding with the transcoder.
         """
-        self.types[transcoding.type] = transcoding
-        self.names[transcoding.name] = transcoding
+        self.types[transcoding.type()] = transcoding
+        self.names[transcoding.name()] = transcoding
 
     def encode(self, obj):
         return dumps(_encode(obj, self.types))

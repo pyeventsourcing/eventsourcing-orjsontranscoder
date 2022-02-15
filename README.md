@@ -22,44 +22,86 @@ install Python packages into a Python virtual environment.
 ## Usage
 
 To use this transcoder in your application, override the `construct_transcoder()`
-method.
+and `register_transcodings()` methods.
 
 ```python
 
 from eventsourcing.application import Application
-from eventsourcing_orjsontranscoder import OrjsonTranscoder
+from eventsourcing_orjsontranscoder import (
+    CDatetimeAsISO,
+    CTupleAsList,
+    CUUIDAsHex,
+    OrjsonTranscoder,
+)
 
 
 class MyApplication(Application):
 
-    ...
-
     def construct_transcoder(self):
-        """
-        Constructs a :class:`~eventsourcing.persistence.Transcoder`
-        for use by the application.
-        """
-        transcoder = OrjsonTranscoder
+        transcoder = OrjsonTranscoder()
         self.register_transcodings(transcoder)
         return transcoder
+
+    def register_transcodings(self, transcoder):
+        transcoder.register(CUUIDAsHex())
+        transcoder.register(CDatetimeAsISO())
+        transcoder.register(CTupleAsList())
 ```
 
-Please remember to implement and register the transcodings required by your domain model.
-See the [library docs](https://eventsourcing.readthedocs.io/en/stable/topics/persistence.html#transcodings)
-for more information.
+Implement and register the transcodings required by the custom value objects in your domain model.
 
-For example, you may wish to use the `TupleAsList` transcoder provided
-by this package.
+You can either import and extend the ``CTranscoding`` class in a normal Python module (a ``.py``) file.
 
 ```python
-    def register_transcodings(self, transcoder):
-        """
-        Constructs a :class:`~eventsourcing.persistence.Transcoder`
-        for use by the application.
-        """
-        from eventsourcing_orjsontranscoder import TupleAsList
-        transcoder.register(TupleAsList())
+from eventsourcing_orjsontranscoder import CTranscoding
+
+class CMyIntAsInt(CTranscoding):
+
+    def type(self):
+        return MyInt
+
+    def name(self):
+        return "myint_as_int"
+
+    def encode(self, obj):
+        return int(obj)
+
+    def decode(self, data):
+        return MyInt(data)
 ```
+
+Alternatively, for greater speed you can write and compile a Cython module (a ``.pyx`` file).
+
+```python
+from _eventsourcing_orjsontranscoder cimport CTranscoding
+
+from my_domain_model import MyInt
+
+cdef class CMyIntAsInt(CTranscoding):
+    cpdef object type(self):
+        return MyInt
+
+    cpdef object name(self):
+        return "myint_as_int"
+
+    cpdef object encode(self, object obj):
+        return int(obj)
+
+    cpdef object decode(self, object data):
+        return MyInt(data)
+```
+
+```commandline
+$ cythonize -i my_transcodings.pyx
+```
+
+See the tests folder in this project repo for examples.
+
+See the Cython documentation for more information about Cython.
+
+See the [library docs](https://eventsourcing.readthedocs.io/en/stable/topics/persistence.html#transcodings)
+for more information about transcoding, but please note the `CTranscoder` uses a slightly
+different API.
 
 
 ## Developers
