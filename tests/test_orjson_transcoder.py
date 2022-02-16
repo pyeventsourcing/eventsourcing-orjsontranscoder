@@ -146,6 +146,37 @@ class TestOrjsonTranscoder(TranscoderTestCase):
         transcoder.register(CMyStrAsStr())
         return transcoder
 
+    def test_none_type(self):
+        transcoder = self.construct_transcoder()
+        obj = None
+        data = transcoder.encode(obj)
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
+    def test_bool(self):
+        transcoder = self.construct_transcoder()
+        obj = True
+        data = transcoder.encode(obj)
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
+        obj = False
+        data = transcoder.encode(obj)
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
+    def test_float(self):
+        transcoder = self.construct_transcoder()
+        obj = 3.141592653589793
+        data = transcoder.encode(obj)
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
+        obj = 211.7
+        data = transcoder.encode(obj)
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
     def test_performance(self):
         transcoder = self.construct_transcoder()
         self._test_performance(transcoder)
@@ -176,11 +207,9 @@ class TestOrjsonTranscoder(TranscoderTestCase):
                 CustomType1(UUID("b2723fe2c01a40d2875ea3aac6a09ff5"))
             ),
         }
-        data = transcoder.encode(obj)
 
         # Warm up.
         timeit.timeit(lambda: transcoder.encode(obj), number=100)
-        timeit.timeit(lambda: transcoder.decode(data), number=100)
 
         number = 100000
         duration = timeit.timeit(lambda: transcoder.encode(obj), number=number)
@@ -188,6 +217,9 @@ class TestOrjsonTranscoder(TranscoderTestCase):
             f"{transcoder.__class__.__name__} encode:"
             f" {1000000 * duration / number:.1f} μs"
         )
+
+        data = transcoder.encode(obj)
+        timeit.timeit(lambda: transcoder.decode(data), number=100)
 
         duration = timeit.timeit(lambda: transcoder.decode(data), number=number)
         print(
