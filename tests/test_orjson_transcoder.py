@@ -236,7 +236,12 @@ class TestOrjsonTranscoder(TranscoderTestCase):
             ),
         }
 
-        print("Encode str to bytes:", timeit.timeit(lambda: "".join(["a" for i in range(1000)]).encode("utf8"), number=1000))
+        data = transcoder.encode(obj)
+        # print(data)
+        transcoder.decode(data)
+        # return
+
+        # print("Encode str to bytes:", timeit.timeit(lambda: ("a"*1000).encode("utf8"), number=1000))
 
         # Warm up.
         timeit.timeit(lambda: transcoder.encode(obj), number=100)

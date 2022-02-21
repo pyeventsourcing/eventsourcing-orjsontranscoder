@@ -82,9 +82,10 @@ cdef class EncoderFrame:
     cdef long node_len  # length of node
     cdef long is_started
 
-    def __cinit__(self, object node, EncoderFrame parent):
+    def __cinit__(self, object node, object node_type, EncoderFrame parent):
+        # print("Frame for:", node)
         self.node = node
-        self.node_type = type(node)
+        self.node_type = node_type
         self.parent = parent
 
 
@@ -105,9 +106,10 @@ cdef class CTranscoder:
 
     cdef object _encode(CTranscoder self, object obj):
         cdef object output = bytearray()
-        cdef object obj_type
+        cdef object child_node
+        cdef object child_node_type
         cdef int is_done = 0
-        cdef EncoderFrame frame = EncoderFrame(node=obj, parent=None)
+        cdef EncoderFrame frame = EncoderFrame(node=obj, node_type=type(obj), parent=None)
         cdef CTranscoding transcoding
         while frame:
             if frame.node_type is str:
@@ -120,8 +122,10 @@ cdef class CTranscoder:
                 frame = frame.parent
             elif frame.node_type is bool:
                 if frame.node is True:
+                    pass
                     output.extend("true".encode('utf8'))
                 else:
+                    pass
                     output.extend("false".encode('utf8'))
                 frame = frame.parent
             elif frame.node_type is float:
@@ -138,12 +142,62 @@ cdef class CTranscoder:
                         output.extend(b"]")
                         frame = frame.parent
                     else:
-                        frame.i_child = 1
-                        frame = EncoderFrame(node=frame.node[0], parent=frame)
+                        while 1:
+                            child_node = frame.node[frame.i_child]
+                            frame.i_child += 1
+                            child_node_type = type(child_node)
+                            if child_node_type is str:
+                                pass
+                                output.extend(b'"')
+                                output.extend(child_node.encode('utf8'))
+                                output.extend(b'"')
+                            elif child_node_type is bool:
+                                pass
+                            elif child_node_type is int:
+                                pass
+                                output.extend(str(child_node).encode('utf8'))
+                            elif child_node_type is float:
+                                pass
+                            else:
+                                frame = EncoderFrame(node=child_node, node_type=child_node_type, parent=frame)
+                                break
+                            if frame.i_child == frame.node_len:
+                                frame = frame.parent
+                                output.extend(b"]")
+                                break
+                            else:
+                                pass
+                                output.extend(b",")
+
+
                 elif frame.i_child < frame.node_len:
-                    output.extend(b",")
-                    frame.i_child += 1
-                    frame = EncoderFrame(node=frame.node[frame.i_child - 1], parent=frame)
+                    while 1:
+                        child_node = frame.node[frame.i_child]
+                        output.extend(b",")
+                        frame.i_child += 1
+                        child_node_type = type(child_node)
+                        if child_node_type is str:
+                            pass
+                            output.extend(b'"')
+                            output.extend(child_node.encode('utf8'))
+                            output.extend(b'"')
+                        elif child_node_type is bool:
+                            pass
+                        elif child_node_type is int:
+                            pass
+                            output.extend(str(child_node).encode('utf8'))
+                        elif child_node_type is float:
+                            pass
+                        else:
+                            frame = EncoderFrame(node=child_node,
+                                                 node_type=child_node_type,
+                                                 parent=frame)
+                            break
+                        if frame.i_child == frame.node_len:
+                            output.extend(b"]")
+                            frame = frame.parent
+                            break
+
                 else:
                     output.extend(b"]")
                     frame = frame.parent
@@ -157,13 +211,65 @@ cdef class CTranscoder:
                         output.extend(b"}")
                         frame = frame.parent
                     else:
-                        output.extend(b'"' + frame.keys[0] + b'":')
-                        frame.i_child += 1
-                        frame = EncoderFrame(node=frame.values[0], parent=frame)
+                        while 1:
+                            child_node = frame.values[frame.i_child]
+                            output.extend(b'"' + frame.keys[frame.i_child] + b'":')
+                            frame.i_child += 1
+                            child_node_type = type(child_node)
+                            if child_node_type is str:
+                                pass
+                                output.extend(b'"')
+                                output.extend(child_node.encode('utf8'))
+                                output.extend(b'"')
+                            elif child_node_type is bool:
+                                pass
+                            elif child_node_type is int:
+                                pass
+                                output.extend(str(child_node).encode('utf8'))
+                            elif child_node_type is float:
+                                pass
+                            else:
+                                frame = EncoderFrame(node=child_node,
+                                                     node_type=child_node_type,
+                                                     parent=frame)
+                                break
+                            if frame.i_child == frame.node_len:
+                                frame = frame.parent
+                                output.extend(b"}")
+                                break
+                            else:
+                                output.extend(b",")
+                                pass
+
                 elif frame.i_child < frame.node_len:
-                    output.extend(b',"' + frame.keys[frame.i_child] + b'":')
-                    frame.i_child += 1
-                    frame = EncoderFrame(node=frame.values[frame.i_child - 1], parent=frame)
+                    while 1:
+                        child_node = frame.values[frame.i_child]
+                        output.extend(b',"' + frame.keys[frame.i_child] + b'":')
+                        frame.i_child += 1
+                        child_node_type = type(child_node)
+                        if child_node_type is str:
+                            pass
+                            output.extend(b'"')
+                            output.extend(child_node.encode('utf8'))
+                            output.extend(b'"')
+                        elif child_node_type is bool:
+                            pass
+                        elif child_node_type is int:
+                            pass
+                            output.extend(str(child_node).encode('utf8'))
+                        elif child_node_type is float:
+                            pass
+                        else:
+                            frame = EncoderFrame(node=child_node,
+                                                 node_type=child_node_type,
+                                                 parent=frame)
+                            break
+                        if frame.i_child == frame.node_len:
+                            frame = frame.parent
+                            output.extend(b"}")
+                            break
+
+
                 else:
                     output.extend(b"}")
                     frame = frame.parent
@@ -186,9 +292,28 @@ cdef class CTranscoder:
                     frame.node_type = dict
                     frame.keys = [b"_type_", b"_data_"]
                     frame.values = [transcoding.name(), transcoding.encode(frame.node)]
-                    output.extend(b'{"' + frame.keys[0] + b'":')
-                    frame.i_child = 1
-                    frame = EncoderFrame(node=frame.values[0], parent=frame)
+                    output.extend(b'{"_type_":"' + transcoding.name().encode("utf8") + b'","_data_":')
+                    frame.i_child = 2
+                    child_node = frame.values[1]
+                    child_node_type = type(child_node)
+                    if child_node_type is str:
+                        pass
+                        output.extend(b'"')
+                        output.extend(child_node.encode('utf8'))
+                        output.extend(b'"}')
+                        frame = frame.parent
+                    elif child_node_type is bool:
+                        pass
+                        frame = frame.parent
+                    elif child_node_type is int:
+                        pass
+                        output.extend(str(child_node).encode('utf8'))
+                        output.extend(b'}')
+                        frame = frame.parent
+                    elif child_node_type is float:
+                        pass
+                    else:
+                        frame = EncoderFrame(node=child_node, node_type=child_node_type, parent=frame)
 
         return output
 
