@@ -246,7 +246,7 @@ class TestOrjsonTranscoder(TranscoderTestCase):
         # Warm up.
         timeit.timeit(lambda: transcoder.encode(obj), number=100)
 
-        number = 1000
+        number = 10000
         duration = timeit.timeit(lambda: transcoder.encode(obj), number=number)
         print(
             f"{transcoder.__class__.__name__} encode:"

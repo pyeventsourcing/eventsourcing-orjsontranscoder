@@ -1,5 +1,6 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
 from datetime import datetime
+from json import JSONDecoder
 from types import NoneType
 from typing import cast
 from uuid import UUID
@@ -447,11 +448,16 @@ cdef class NullTranscoder(CTranscoder):
 
 
 cdef class OrjsonTranscoder(CTranscoder):
+    cdef object decoder
+
+    def __cinit__(self):
+        self.decoder = JSONDecoder()
+
     cpdef object encode(self, object obj):
         return self._encode(obj)
 
     cpdef object decode(self, object data):
-        return self._decode(loads(data))
+        return self._decode(self.decoder.decode(data.decode('utf8')))
 
 #
 # class OrjsonTranscoderRecursive(Transcoder):
