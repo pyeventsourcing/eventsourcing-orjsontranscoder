@@ -1,11 +1,11 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
 from datetime import datetime
-from types import NoneType
 from typing import cast
 from uuid import UUID
 
 from orjson import dumps, loads
 
+NoneType = type(None)
 
 cdef class CTranscoding:
 
@@ -147,8 +147,7 @@ cdef class CTranscoder:
             elif next_type is list:
                 list_obj = <list> next
                 for list_index in range(len(list_obj)):
-                    self._encode_value(list_obj[list_index], stack, next,
-                                  list_index)
+                    self._encode_value(list_obj[list_index], stack, next, list_index)
         return objects[0]
 
     cdef object _decode(CTranscoder self, object obj):
