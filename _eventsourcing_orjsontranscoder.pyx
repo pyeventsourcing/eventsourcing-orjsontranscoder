@@ -4,6 +4,9 @@ from types import NoneType
 from typing import cast
 from uuid import UUID
 
+from cpython.ref cimport PyObject
+
+cimport cython
 from orjson import dumps, loads
 
 
@@ -69,6 +72,21 @@ cdef class CUUIDAsHex(CTranscoding):
     cpdef object decode(self, object data):
         return UUID(data)
 
+cdef class EncoderFrame:
+    cdef EncoderFrame parent
+    cdef object node
+    cdef object node_type
+    cdef list keys    # for dict node
+    cdef list values  # for dict node
+    cdef long i_child  # state of frame iteration over child nodes
+    cdef long node_len  # length of node
+    cdef long is_started
+
+    def __cinit__(self, object node, EncoderFrame parent):
+        self.node = node
+        self.node_type = type(node)
+        self.parent = parent
+
 
 cdef class CTranscoder:
     cdef dict types
@@ -85,71 +103,133 @@ cdef class CTranscoder:
         self.types[transcoding.type()] = transcoding
         self.names[transcoding.name()] = transcoding
 
-    cdef object _encode_value(CTranscoder self, object obj, list stack, object parent, object key):
-        cdef CTranscoding transcoding
-        cdef object obj_type = type(obj)
-
-        if obj_type is str:
-            pass
-        elif obj_type is int:
-            pass
-        elif obj_type is float:
-            pass
-        elif obj_type is NoneType:
-            pass
-        elif obj_type is bool:
-            pass
-        elif obj_type is dict:
-            obj = obj.copy()
-            stack.append(obj)
-            parent[key] = obj
-        elif obj_type is list:
-            obj = obj.copy()
-            stack.append(obj)
-            parent[key] = obj
-        else:
-            try:
-                transcoding = self.types[obj_type]
-            except KeyError:
-                raise TypeError(
-                    f"Object of type {obj_type} is not "
-                    "serializable. Please define and register "
-                    f"a custom transcoding for this type."
-                ) from None
-            else:
-                obj = {
-                    "_type_": transcoding.name(),
-                    "_data_": transcoding.encode(obj),
-                }
-                stack.append(obj)
-                parent[key] = obj
-
     cdef object _encode(CTranscoder self, object obj):
-        cdef list stack = list()
-        cdef int stack_pointer = 0
-        cdef object next
-        cdef object next_type
-        cdef object dict_key
-        cdef object value
-        cdef int list_index
-        cdef list list_obj
+        cdef object output = bytearray()
+        cdef object obj_type
+        cdef int is_done = 0
+        cdef EncoderFrame frame = EncoderFrame(node=obj, parent=None)
+        cdef CTranscoding transcoding
+        while frame:
+            if frame.node_type is str:
+                output.extend(b'"')
+                output.extend(frame.node.encode('utf8'))
+                output.extend(b'"')
+                frame = frame.parent
+            elif frame.node_type is int:
+                output.extend(str(frame.node).encode('utf8'))
+                frame = frame.parent
+            elif frame.node_type is bool:
+                if frame.node is True:
+                    output.extend("true".encode('utf8'))
+                else:
+                    output.extend("false".encode('utf8'))
+                frame = frame.parent
+            elif frame.node_type is float:
+                output.extend(str(frame.node).encode('utf8'))
+                frame = frame.parent
+            elif frame.node_type is NoneType:
+                output.extend(str("null").encode('utf8'))
+                frame = frame.parent
+            elif frame.node_type is list:
+                if frame.i_child == 0:
+                    frame.node_len = len(frame.node)
+                    output.extend(b"[")
+                    if frame.node_len == 0:
+                        output.extend(b"]")
+                        frame = frame.parent
+                    else:
+                        frame.i_child = 1
+                        frame = EncoderFrame(node=frame.node[0], parent=frame)
+                elif frame.i_child < frame.node_len:
+                    output.extend(b",")
+                    frame.i_child += 1
+                    frame = EncoderFrame(node=frame.node[frame.i_child - 1], parent=frame)
+                else:
+                    output.extend(b"]")
+                    frame = frame.parent
+            elif frame.node_type is dict:
+                if frame.i_child == 0:
+                    frame.node_len = len(frame.node)
+                    frame.keys = [key.encode("utf8") for key in frame.node.keys()]
+                    frame.values = list(frame.node.values())
+                    output.extend(b"{")
+                    if frame.node_len == 0:
+                        output.extend(b"}")
+                        frame = frame.parent
+                    else:
+                        output.extend(b'"' + frame.keys[0] + b'":')
+                        frame.i_child += 1
+                        frame = EncoderFrame(node=frame.values[0], parent=frame)
+                elif frame.i_child < frame.node_len:
+                    output.extend(b',"' + frame.keys[frame.i_child] + b'":')
+                    frame.i_child += 1
+                    frame = EncoderFrame(node=frame.values[frame.i_child - 1], parent=frame)
+                else:
+                    output.extend(b"}")
+                    frame = frame.parent
+            else:
+                try:
+                    transcoding = self.types[frame.node_type]
+                except KeyError:
+                    raise TypeError(
+                        f"Object of type {frame.node_type} is not "
+                        "serializable. Please define and register "
+                        f"a custom transcoding for this type."
+                    ) from None
+                else:
+                    # obj = {
+                    #     "_type_": transcoding.name(),
+                    #     "_data_": transcoding.encode(obj),
+                    # }
 
-        cdef list objects = [obj]
-        self._encode_value(obj, stack, objects, 0)
-        while stack_pointer < len(stack):
-            next = stack[stack_pointer]
-            stack_pointer += 1
-            next_type = type(next)
-            if next_type is dict:
-                for dict_key, value in (<dict> next).items():
-                    self._encode_value(value, stack, next, dict_key)
+                    frame.node_len = 2
+                    frame.node_type = dict
+                    frame.keys = [b"_type_", b"_data_"]
+                    frame.values = [transcoding.name(), transcoding.encode(frame.node)]
+                    output.extend(b'{"' + frame.keys[0] + b'":')
+                    frame.i_child = 1
+                    frame = EncoderFrame(node=frame.values[0], parent=frame)
 
-            elif next_type is list:
-                list_obj = <list> next
-                for list_index in range(len(list_obj)):
-                    self._encode_value(list_obj[list_index], stack, next,
-                                  list_index)
-        return objects[0]
+        return output
+
+    # cdef object _encode_value(CTranscoder self, object obj, list stack, object parent, object key):
+    #     cdef CTranscoding transcoding
+    #     cdef object obj_type = type(obj)
+    #
+    #     if obj_type is str:
+    #         pass
+    #     elif obj_type is int:
+    #         pass
+    #     elif obj_type is float:
+    #         pass
+    #     elif obj_type is NoneType:
+    #         pass
+    #     elif obj_type is bool:
+    #         pass
+    #     elif obj_type is dict:
+    #         obj = obj.copy()
+    #         stack.append(obj)
+    #         parent[key] = obj
+    #     elif obj_type is list:
+    #         obj = obj.copy()
+    #         stack.append(obj)
+    #         parent[key] = obj
+    #     else:
+    #         try:
+    #             transcoding = self.types[obj_type]
+    #         except KeyError:
+    #             raise TypeError(
+    #                 f"Object of type {obj_type} is not "
+    #                 "serializable. Please define and register "
+    #                 f"a custom transcoding for this type."
+    #             ) from None
+    #         else:
+    #             obj = {
+    #                 "_type_": transcoding.name(),
+    #                 "_data_": transcoding.encode(obj),
+    #             }
+    #             stack.append(obj)
+    #             parent[key] = obj
 
     cdef object _decode(CTranscoder self, object obj):
         cdef list stack = []
@@ -235,7 +315,7 @@ cdef class NullTranscoder(CTranscoder):
 
 cdef class OrjsonTranscoder(CTranscoder):
     cpdef object encode(self, object obj):
-        return dumps(self._encode(obj))
+        return self._encode(obj)
 
     cpdef object decode(self, object data):
         return self._decode(loads(data))

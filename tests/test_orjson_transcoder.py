@@ -153,6 +153,32 @@ class TestOrjsonTranscoder(TranscoderTestCase):
         copy = transcoder.decode(data)
         self.assertEqual(obj, copy)
 
+    def test_list(self):
+        transcoder = self.construct_transcoder()
+        obj = [1, 2]
+        data = transcoder.encode(obj)
+        self.assertEqual(data, b"[1,2]")
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+        super().test_list()
+
+    def test_dict(self):
+        transcoder = self.construct_transcoder()
+        obj = {"a": 1}
+        data = transcoder.encode(obj)
+        self.assertEqual(data, b'{"a":1}')
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+        super().test_dict()
+
+    def test_int(self):
+        transcoder = self.construct_transcoder()
+        obj = 11111111111111111111111111111111111
+        data = transcoder.encode(obj)
+        self.assertEqual(data, b"11111111111111111111111111111111111")
+        copy = transcoder.decode(data)
+        self.assertEqual(obj, copy)
+
     def test_bool(self):
         transcoder = self.construct_transcoder()
         obj = True
@@ -169,11 +195,13 @@ class TestOrjsonTranscoder(TranscoderTestCase):
         transcoder = self.construct_transcoder()
         obj = 3.141592653589793
         data = transcoder.encode(obj)
+        self.assertEqual(data, b"3.141592653589793")
         copy = transcoder.decode(data)
         self.assertEqual(obj, copy)
 
         obj = 211.7
         data = transcoder.encode(obj)
+        self.assertEqual(data, b"211.7")
         copy = transcoder.decode(data)
         self.assertEqual(obj, copy)
 
@@ -208,10 +236,12 @@ class TestOrjsonTranscoder(TranscoderTestCase):
             ),
         }
 
+        print("Encode str to bytes:", timeit.timeit(lambda: "".join(["a" for i in range(1000)]).encode("utf8"), number=1000))
+
         # Warm up.
         timeit.timeit(lambda: transcoder.encode(obj), number=100)
 
-        number = 100000
+        number = 1000
         duration = timeit.timeit(lambda: transcoder.encode(obj), number=number)
         print(
             f"{transcoder.__class__.__name__} encode:"
