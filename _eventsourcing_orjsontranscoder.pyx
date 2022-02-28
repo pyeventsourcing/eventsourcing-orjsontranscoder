@@ -104,10 +104,9 @@ cdef class ListEncoderFrame(EncoderFrame):
         cdef NodeTypeCode child_node_type_code
 
         if self.node_len == 0:
-            self.output.append("[]")
-            frame = self.parent
+            frame = self.start_and_finish()
         elif self.i_child == 0:
-            self.output.append("[")
+            self.start()
             while 1:
                 child_node = self.node[self.i_child]
                 self.i_child += 1
@@ -125,25 +124,24 @@ cdef class ListEncoderFrame(EncoderFrame):
                     pass
                 elif child_node_type_code == node_type_list:
                     frame = ListEncoderFrame(types=self.types, output=self.output,
-                                            node=child_node,
-                                            node_type_code=child_node_type_code,
-                                            parent=self)
+                                             node=child_node,
+                                             node_type_code=child_node_type_code,
+                                             parent=self)
                     break
                 elif child_node_type_code == node_type_dict:
                     frame = DictEncoderFrame(types=self.types, output=self.output,
-                                            node=child_node,
-                                            node_type_code=child_node_type_code,
-                                            parent=self)
+                                             node=child_node,
+                                             node_type_code=child_node_type_code,
+                                             parent=self)
                     break
                 else:
                     frame = CustomTypeEncoderFrame(types=self.types, output=self.output,
-                                            node=child_node,
+                                                   node=child_node,
                                                    node_type_code=child_node_type_code,
                                                    parent=self)
                     break
                 if self.i_child == self.node_len:
-                    self.output.append("]")
-                    frame = self.parent
+                    frame = self.finish()
                     break
                 else:
                     self.output.append(",")
@@ -184,15 +182,25 @@ cdef class ListEncoderFrame(EncoderFrame):
                                                    parent=self)
                     break
                 if self.i_child == self.node_len:
-                    self.output.append("]")
-                    frame = self.parent
+                    frame = self.finish()
                     break
 
         else:
-            self.output.append("]")
-            frame = self.parent
+            frame = self.finish()
 
         return frame
+
+    cdef void start(self):
+        self.output.append("[")
+
+    cdef EncoderFrame finish(self):
+        self.output.append("]")
+        return self.parent
+
+    cdef EncoderFrame start_and_finish(self):
+        self.output.append("[]")
+        return self.parent
+
 
 
 cdef class DictEncoderFrame(EncoderFrame):
@@ -218,10 +226,9 @@ cdef class DictEncoderFrame(EncoderFrame):
         cdef NodeTypeCode child_node_type_code
 
         if self.node_len == 0:
-            self.output.append("{}")
-            frame = self.parent
+            frame = self.start_and_finish()
         elif self.i_child == 0:
-            self.output.append("{")
+            self.start()
             while 1:
                 self.output.append('"')
                 self.output.append(self.keys[self.i_child])
@@ -256,9 +263,7 @@ cdef class DictEncoderFrame(EncoderFrame):
                                                    parent=self)
                     break
                 if self.i_child == self.node_len:
-
-                    frame = self.parent
-                    self.output.append("}")
+                    frame = self.finish()
                     break
                 else:
                     self.output.append(",")
@@ -299,16 +304,26 @@ cdef class DictEncoderFrame(EncoderFrame):
                                                    parent=self)
                     break
                 if self.i_child == self.node_len:
-                    frame = self.parent
-                    self.output.append("}")
+                    frame = self.finish()
                     break
 
 
         else:
-            self.output.append("}")
-            frame = self.parent
+            frame = self.finish()
 
         return frame
+
+    cdef void start(self):
+        self.output.append("{")
+
+    cdef EncoderFrame finish(self):
+        self.output.append("}")
+        return self.parent
+
+    cdef EncoderFrame start_and_finish(self):
+        self.output.append("{}")
+        return self.parent
+
 
 
 cdef class CustomTypeEncoderFrame(EncoderFrame):
