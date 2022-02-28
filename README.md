@@ -119,7 +119,7 @@ cdef class CMyIntAsInt(CTranscoding):
     cpdef object type(self):
         return MyInt
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "myint_as_int"
 
     cpdef object encode(self, object obj):

@@ -15,7 +15,7 @@ cdef class CCustomType1AsDict(CTranscoding):
     cpdef object type(self):
         return CustomType1
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "custom_type1_as_dict"
 
     cpdef object encode(self, object obj):
@@ -29,7 +29,7 @@ cdef class CCustomType2AsDict(CTranscoding):
     cpdef object type(self):
         return CustomType2
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "custom_type2_as_dict"
 
     cpdef object encode(self, object obj):
@@ -43,7 +43,7 @@ cdef class CMyDictAsDict(CTranscoding):
     cpdef object type(self):
         return MyDict
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "mydict"
 
     cpdef object encode(self, object obj):
@@ -57,7 +57,7 @@ cdef class CMyListAsList(CTranscoding):
     cpdef object type(self):
         return MyList
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "mylist"
 
     cpdef object encode(self, object obj):
@@ -71,7 +71,7 @@ cdef class CMyStrAsStr(CTranscoding):
     cpdef object type(self):
         return MyStr
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "mystr"
 
     cpdef object encode(self, object obj):
@@ -85,7 +85,7 @@ cdef class CMyIntAsInt(CTranscoding):
     cpdef object type(self):
         return MyInt
 
-    cpdef object name(self):
+    cpdef str name(self):
         return "myint"
 
     cpdef object encode(self, object obj):
