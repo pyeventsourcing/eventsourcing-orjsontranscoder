@@ -88,6 +88,9 @@ cdef class EncoderFrame:
         self.node_type_code = node_type_code
         self.parent = parent
 
+cdef class ListEncoderFrame(EncoderFrame):
+    pass
+
 
 cdef NodeTypeCode get_type_code(object node):
     cdef object node_type = type(node)
@@ -161,6 +164,8 @@ cdef class CTranscoder:
             output.append(str(<double>node))
         elif obj_type_code == node_type_null:
             output.append(str("null"))
+        elif obj_type_code == node_type_list:
+            frame = ListEncoderFrame(node=node, node_type_code=obj_type_code, parent=None)
         else:
             frame = EncoderFrame(node=node, node_type_code=obj_type_code, parent=None)
 
@@ -188,6 +193,9 @@ cdef class CTranscoder:
                                 output.append(str(child_node))
                             elif child_node_type_code == node_type_float:
                                 pass
+                            elif child_node_type_code == node_type_list:
+                                frame = ListEncoderFrame(node=child_node, node_type_code=child_node_type_code, parent=frame)
+                                break
                             else:
                                 frame = EncoderFrame(node=child_node, node_type_code=child_node_type_code, parent=frame)
                                 break
@@ -216,6 +224,11 @@ cdef class CTranscoder:
                             output.append(str(child_node))
                         elif child_node_type_code == node_type_float:
                             pass
+                        elif child_node_type_code == node_type_list:
+                            frame = ListEncoderFrame(node=child_node,
+                                                     node_type_code=child_node_type_code,
+                                                     parent=frame)
+                            break
                         else:
                             frame = EncoderFrame(node=child_node,
                                                  node_type_code=child_node_type_code,
@@ -258,6 +271,11 @@ cdef class CTranscoder:
                                 output.append(str(child_node))
                             elif child_node_type_code == node_type_float:
                                 pass
+                            elif child_node_type_code == node_type_list:
+                                frame = ListEncoderFrame(node=child_node,
+                                                         node_type_code=child_node_type_code,
+                                                         parent=frame)
+                                break
                             else:
                                 frame = EncoderFrame(node=child_node,
                                                      node_type_code=child_node_type_code,
@@ -290,6 +308,11 @@ cdef class CTranscoder:
                             output.append(str(child_node))
                         elif child_node_type_code == node_type_float:
                             pass
+                        elif child_node_type_code == node_type_list:
+                            frame = ListEncoderFrame(node=child_node,
+                                                     node_type_code=child_node_type_code,
+                                                     parent=frame)
+                            break
                         else:
                             frame = EncoderFrame(node=child_node,
                                                  node_type_code=child_node_type_code,
@@ -344,6 +367,10 @@ cdef class CTranscoder:
                         frame = frame.parent
                     elif child_node_type_code == node_type_float:
                         pass
+                    elif child_node_type_code == node_type_list:
+                        frame = ListEncoderFrame(node=child_node,
+                                                 node_type_code=child_node_type_code,
+                                                 parent=frame)
                     else:
                         frame = EncoderFrame(node=child_node, node_type_code=child_node_type_code, parent=frame)
 
