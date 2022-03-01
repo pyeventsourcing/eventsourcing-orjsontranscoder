@@ -5,14 +5,8 @@ from types import NoneType
 from typing import cast
 from uuid import UUID
 
-from cpython.ref cimport PyObject
-
-cimport cython
-from orjson import dumps, loads
-
 
 cdef class CTranscoding:
-
     cpdef object type(self):
         raise NotImplementedError()
 
@@ -74,359 +68,168 @@ cdef class CUUIDAsHex(CTranscoding):
         return UUID(data)
 
 
+cdef EncoderFrame visit_node(object node, list output, dict types, EncoderFrame frame):
+    cdef object node_type = type(node)
+    if node_type is str:
+        output.append('"')
+        output.append(node)
+        output.append('"')
+    elif node_type is int:
+        output.append(str(node))
+    elif node_type is float:
+        output.append(str(node))
+    elif node_type is bool:
+        if <bint> node == 1:
+            output.append("true")
+        else:
+            output.append("false")
+    elif node_type is NoneType:
+        output.append("null")
+    elif node_type is list:
+        return ListEncoderFrame(
+            types=types,
+            output=output,
+            node=node,
+            parent=frame
+        )
+    elif node_type is dict:
+        return DictEncoderFrame(
+            types=types,
+            output=output,
+            node=node,
+            parent=frame
+        )
+    else:
+        return CustomTypeEncoderFrame(
+            types=types,
+            output=output,
+            node=node,
+            parent=frame
+        )
+
+
 cdef class EncoderFrame:
     cdef dict types
     cdef list output
-    cdef object node
-    cdef NodeTypeCode node_type_code
+    cdef long i_child
+    cdef long node_len
     cdef EncoderFrame parent
+    cdef str start_char
+    cdef str finish_char
 
-    cdef EncoderFrame run(self):
-        raise NotImplementedError((self.__class__.__name__, self.node, self.node_type_code))
-
-
-cdef class ListEncoderFrame(EncoderFrame):
-    cdef long i_child  # state of frame iteration over child nodes
-    cdef long node_len  # length of node
-
-    def __cinit__(self, dict types, list output, object node, NodeTypeCode node_type_code, EncoderFrame parent):
-        self.types = types
-        self.output = output
-        self.node = node
-        self.node_type_code = node_type_code
-        self.parent = parent
-        self.i_child = 0
-        self.node_len = len(node)
-
-    cdef EncoderFrame run(self):
+    cdef EncoderFrame encode_node(self):
         cdef EncoderFrame frame = None
-        cdef object child_node
-        cdef NodeTypeCode child_node_type_code
 
-        if self.node_len == 0:
-            frame = self.start_and_finish()
-        elif self.i_child == 0:
-            self.start()
-            while 1:
-                child_node = self.node[self.i_child]
-                self.i_child += 1
-                child_node_type_code = get_type_code(child_node)
-                if child_node_type_code == node_type_str:
-                    self.output.append('"')
-                    self.output.append(child_node)
-                    self.output.append('"')
-                elif child_node_type_code == node_type_bool:
-                    pass
-                elif child_node_type_code == node_type_int:
-                    pass
-                    self.output.append(str(child_node))
-                elif child_node_type_code == node_type_float:
-                    pass
-                elif child_node_type_code == node_type_list:
-                    frame = ListEncoderFrame(types=self.types, output=self.output,
-                                             node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                elif child_node_type_code == node_type_dict:
-                    frame = DictEncoderFrame(types=self.types, output=self.output,
-                                             node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                else:
-                    frame = CustomTypeEncoderFrame(types=self.types, output=self.output,
-                                                   node=child_node,
-                                                   node_type_code=child_node_type_code,
-                                                   parent=self)
-                    break
-                if self.i_child == self.node_len:
-                    frame = self.finish()
-                    break
-                else:
-                    self.output.append(",")
+        if self.i_child == 0:
+            self.output.append(self.start_char)
 
-        elif self.i_child < self.node_len:
-            while 1:
-                child_node = self.node[self.i_child]
+        while frame is None and self.i_child < self.node_len:
+            if self.i_child > 0:
                 self.output.append(",")
-                self.i_child += 1
-                child_node_type_code = get_type_code(child_node)
-                if child_node_type_code == node_type_str:
-                    self.output.append('"')
-                    self.output.append(<str> child_node)
-                    self.output.append('"')
-                elif child_node_type_code == node_type_bool:
-                    pass
-                elif child_node_type_code == node_type_int:
-                    pass
-                    self.output.append(str(child_node))
-                elif child_node_type_code == node_type_float:
-                    pass
-                elif child_node_type_code == node_type_list:
-                    frame = ListEncoderFrame(types=self.types, output=self.output,
-                                                node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                elif child_node_type_code == node_type_dict:
-                    frame = DictEncoderFrame(types=self.types, output=self.output,
-                                                node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                else:
-                    frame = CustomTypeEncoderFrame(types=self.types, output=self.output,
-                                                node=child_node,
-                                                   node_type_code=child_node_type_code,
-                                                   parent=self)
-                    break
-                if self.i_child == self.node_len:
-                    frame = self.finish()
-                    break
 
-        else:
-            frame = self.finish()
+            frame = visit_node(self.next_child(), self.output, self.types, self)
+
+        if frame is None and self.i_child == self.node_len:
+            self.output.append(self.finish_char)
+            frame = self.parent
 
         return frame
 
-    cdef void start(self):
-        self.output.append("[")
-
-    cdef EncoderFrame finish(self):
-        self.output.append("]")
-        return self.parent
-
-    cdef EncoderFrame start_and_finish(self):
-        self.output.append("[]")
-        return self.parent
+    cdef object next_child(self):
+        raise NotImplementedError()
 
 
+cdef class ListEncoderFrame(EncoderFrame):
+    cdef list node
 
-cdef class DictEncoderFrame(EncoderFrame):
-    cdef long i_child  # state of frame iteration over child nodes
-    cdef long node_len  # length of node
-    cdef list keys    # for dict node
-    cdef list values  # for dict node
-
-    def __cinit__(self, dict types, list output, object node, NodeTypeCode node_type_code, EncoderFrame parent):
+    def __cinit__(
+        self,
+        dict types,
+        list output,
+        list node,
+        EncoderFrame parent
+    ):
         self.types = types
         self.output = output
         self.node = node
-        self.node_type_code = node_type_code
+        self.parent = parent
+        self.i_child = 0
+        self.node_len = len(node)
+        self.start_char = "["
+        self.finish_char = "]"
+
+    cdef object next_child(self):
+        cdef object child_node = self.node[self.i_child]
+        self.i_child += 1
+        return child_node
+
+
+cdef class DictEncoderFrame(EncoderFrame):
+    cdef list keys
+    cdef list values
+
+    def __cinit__(
+        self,
+        dict types,
+        list output,
+        dict node,
+        EncoderFrame parent
+    ):
+        self.types = types
+        self.output = output
         self.parent = parent
         self.i_child = 0
         self.node_len = len(node)
         self.keys = [key for key in node.keys()]
         self.values = list(node.values())
+        self.start_char = "{"
+        self.finish_char = "}"
 
-    cdef EncoderFrame run(self):
-        cdef EncoderFrame frame = None
-        cdef object child_node
-        cdef NodeTypeCode child_node_type_code
-
-        if self.node_len == 0:
-            frame = self.start_and_finish()
-        elif self.i_child == 0:
-            self.start()
-            while 1:
-                self.output.append('"')
-                self.output.append(self.keys[self.i_child])
-                self.output.append('":')
-                child_node = self.values[self.i_child]
-                self.i_child += 1
-                child_node_type_code = get_type_code(child_node)
-                if child_node_type_code == node_type_str:
-                    self.output.append('"')
-                    self.output.append(child_node)
-                    self.output.append('"')
-                elif child_node_type_code == node_type_bool:
-                    pass
-                elif child_node_type_code == node_type_int:
-                    pass
-                    self.output.append(str(child_node))
-                elif child_node_type_code == node_type_float:
-                    pass
-                elif child_node_type_code == node_type_list:
-                    frame = ListEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                elif child_node_type_code == node_type_dict:
-                    frame = DictEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                else:
-                    frame = CustomTypeEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                                   node_type_code=child_node_type_code,
-                                                   parent=self)
-                    break
-                if self.i_child == self.node_len:
-                    frame = self.finish()
-                    break
-                else:
-                    self.output.append(",")
-                    pass
-
-        elif self.i_child < self.node_len:
-            while 1:
-                child_node = self.values[self.i_child]
-                self.output.append(',"')
-                self.output.append(self.keys[self.i_child])
-                self.output.append('":')
-                self.i_child += 1
-                child_node_type_code = get_type_code(child_node)
-                if child_node_type_code == node_type_str:
-                    self.output.append('"')
-                    self.output.append(child_node)
-                    self.output.append('"')
-                elif child_node_type_code == node_type_bool:
-                    pass
-                elif child_node_type_code == node_type_int:
-                    pass
-                    self.output.append(str(child_node))
-                elif child_node_type_code == node_type_float:
-                    pass
-                elif child_node_type_code == node_type_list:
-                    frame = ListEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                elif child_node_type_code == node_type_dict:
-                    frame = DictEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                    break
-                else:
-                    frame = CustomTypeEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                                   node_type_code=child_node_type_code,
-                                                   parent=self)
-                    break
-                if self.i_child == self.node_len:
-                    frame = self.finish()
-                    break
-
-
-        else:
-            frame = self.finish()
-
-        return frame
-
-    cdef void start(self):
-        self.output.append("{")
-
-    cdef EncoderFrame finish(self):
-        self.output.append("}")
-        return self.parent
-
-    cdef EncoderFrame start_and_finish(self):
-        self.output.append("{}")
-        return self.parent
-
+    cdef object next_child(self):
+        cdef object child_node = self.values[self.i_child]
+        self.output.append('"')
+        self.output.append(self.keys[self.i_child])
+        self.output.append('":')
+        self.i_child += 1
+        return child_node
 
 
 cdef class CustomTypeEncoderFrame(EncoderFrame):
-    cdef int is_started
+    cdef object node
 
-    def __cinit__(self, dict types, list output, object node, NodeTypeCode node_type_code, EncoderFrame parent):
+    def __cinit__(
+        self,
+        dict types,
+        list output,
+        object node,
+        EncoderFrame parent
+    ):
         self.types = types
         self.output = output
         self.node = node
-        self.node_type_code = node_type_code
         self.parent = parent
-        self.is_started = 0
+        self.i_child = 0
+        self.node_len = 1
+        self.start_char = "{"
+        self.finish_char = "}"
 
-    cdef EncoderFrame run(self):
-        cdef EncoderFrame frame = None
-        cdef object child_node
-        cdef NodeTypeCode child_node_type_code
+    cdef object next_child(self):
         cdef CTranscoding transcoding
+        try:
 
-        if self.is_started == 0:
-            self.is_started = 1
-
-            try:
-
-                transcoding = self.types[type(self.node)]
-            except KeyError:
-                raise TypeError(
-                    f"Object of type {type(self.node)} is not "
-                    "serializable. Please define and register "
-                    f"a custom transcoding for this type."
-                ) from None
-            else:
-                # obj = {
-                #     "_type_": transcoding.name(),
-                #     "_data_": transcoding.encode(obj),
-                # }
-
-
-                self.output.append('{"_type_":"')
-                self.output.append(transcoding.name())
-                self.output.append('","_data_":')
-                child_node = transcoding.encode(self.node)
-                child_node_type_code = get_type_code(child_node)
-                if child_node_type_code == node_type_str:
-                    self.output.append('"')
-                    self.output.append(child_node)
-                    self.output.append('"}')
-                    frame = self.parent
-                elif child_node_type_code == node_type_bool:
-                    frame = self.parent
-                elif child_node_type_code == node_type_int:
-                    self.output.append(str(child_node))
-                    self.output.append("}")
-                    frame = self.parent
-                elif child_node_type_code == node_type_float:
-                    pass
-                elif child_node_type_code == node_type_list:
-                    frame = ListEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                elif child_node_type_code == node_type_dict:
-                    frame = DictEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                             node_type_code=child_node_type_code,
-                                             parent=self)
-                else:
-                    frame = CustomTypeEncoderFrame(types=self.types, output=self.output, node=child_node,
-                                                   node_type_code=child_node_type_code,
-                                                   parent=self)
+            transcoding = self.types[type(self.node)]
+        except KeyError:
+            raise TypeError(
+                f"Object of type {type(self.node)} is not "
+                "serializable. Please define and register "
+                f"a custom transcoding for this type."
+            ) from None
         else:
-            self.output.append("}")
-            frame = self.parent
-
-        return frame
-
-cdef NodeTypeCode get_type_code(object node):
-    cdef object node_type = type(node)
-    if node_type is str:
-        return node_type_str
-    elif node_type is int:
-        return node_type_int
-    elif node_type is float:
-        return node_type_float
-    elif node_type is bool:
-        return node_type_bool
-    elif node_type is NoneType:
-        return node_type_null
-    elif node_type is list:
-        return node_type_list
-    elif node_type is dict:
-        return node_type_dict
-    else:
-        return node_type_custom
-
-
-cdef enum NodeTypeCode:
-    node_type_str = 1
-    node_type_int = 2
-    node_type_float = 3
-    node_type_bool = 4
-    node_type_null = 5
-    node_type_list = 6
-    node_type_dict = 7
-    node_type_custom = 8
+            self.output.append('"_type_":"')
+            self.output.append(transcoding.name())
+            self.output.append('","_data_":')
+            self.i_child += 1
+            return transcoding.encode(self.node)
 
 
 cdef class CTranscoder:
@@ -446,79 +249,10 @@ cdef class CTranscoder:
 
     cdef str _encode(CTranscoder self, object node):
         cdef list output = list()
-        cdef NodeTypeCode obj_type_code
-        cdef object child_node
-        cdef NodeTypeCode child_node_type_code
-        cdef EncoderFrame frame = None
-
-        obj_type_code = get_type_code(node)
-        if obj_type_code == node_type_str:
-            output.append('"')
-            output.append(node)
-            output.append('"')
-        elif obj_type_code == node_type_int:
-            output.append(str(node))
-        elif obj_type_code == node_type_bool:
-            if <bint>node == 1:
-                pass
-                output.append("true")
-            else:
-                pass
-                output.append("false")
-        elif obj_type_code == node_type_float:
-            output.append(str(<double>node))
-        elif obj_type_code == node_type_null:
-            output.append(str("null"))
-        elif obj_type_code == node_type_list:
-            frame = ListEncoderFrame(types=self.types, output=output, node=node, node_type_code=obj_type_code, parent=None)
-        elif obj_type_code == node_type_dict:
-            frame = DictEncoderFrame(types=self.types, output=output, node=node, node_type_code=obj_type_code, parent=None)
-        else:
-            frame = CustomTypeEncoderFrame(types=self.types, output=output, node=node, node_type_code=obj_type_code, parent=None)
-
+        cdef EncoderFrame frame =  visit_node(node, output, self.types, None)
         while frame:
-            frame = frame.run()
-
+            frame = frame.encode_node()
         return "".join(output)
-
-    # cdef object _encode_value(CTranscoder self, object obj, list stack, object parent, object key):
-    #     cdef CTranscoding transcoding
-    #     cdef object obj_type = type(obj)
-    #
-    #     if obj_type is str:
-    #         pass
-    #     elif obj_type is int:
-    #         pass
-    #     elif obj_type is float:
-    #         pass
-    #     elif obj_type is NoneType:
-    #         pass
-    #     elif obj_type is bool:
-    #         pass
-    #     elif obj_type is dict:
-    #         obj = obj.copy()
-    #         stack.append(obj)
-    #         parent[key] = obj
-    #     elif obj_type is list:
-    #         obj = obj.copy()
-    #         stack.append(obj)
-    #         parent[key] = obj
-    #     else:
-    #         try:
-    #             transcoding = self.types[obj_type]
-    #         except KeyError:
-    #             raise TypeError(
-    #                 f"Object of type {obj_type} is not "
-    #                 "serializable. Please define and register "
-    #                 f"a custom transcoding for this type."
-    #             ) from None
-    #         else:
-    #             obj = {
-    #                 "_type_": transcoding.name(),
-    #                 "_data_": transcoding.encode(obj),
-    #             }
-    #             stack.append(obj)
-    #             parent[key] = obj
 
     cdef object _decode(CTranscoder self, object obj):
         cdef list stack = []
@@ -594,7 +328,6 @@ cdef class CTranscoder:
 
 
 cdef class NullTranscoder(CTranscoder):
-
     cpdef object encode(self, object obj):
         return self._encode(obj).encode('utf8')
 
