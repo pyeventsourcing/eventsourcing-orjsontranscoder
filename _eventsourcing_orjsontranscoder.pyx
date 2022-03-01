@@ -1,9 +1,10 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, nonecheck=False, binding=False
 from datetime import datetime
 from json import JSONDecoder
-from types import NoneType
 from typing import cast
 from uuid import UUID
+
+NoneType = type(None)
 
 
 cdef class CTranscoding:
